@@ -1,7 +1,8 @@
 pyserial
 picamera2
 requests
-google-generativeai
+openai
 flask
 flask-cors
 gpiozero
+python-dotenv
