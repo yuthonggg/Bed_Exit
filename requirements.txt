@@ -1,0 +1,7 @@
+pyserial
+picamera2
+requests
+google-generativeai
+flask
+flask-cors
+gpiozero

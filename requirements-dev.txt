@@ -1,0 +1,10 @@
+pyserial
+requests
+flask
+flask-cors
+gpiozero
+opencv-python
+google-generativeai
+Pillow
+# picamera2 is omitted here because it is Linux/RPi only. 
+# The system will run in simulation mode on Windows.

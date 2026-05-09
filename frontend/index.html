@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bed Exit Monitor</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-color: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --unsafe: #ef4444;
+            --safe: #10b981;
+            --repositioning: #64748b;
+            --inconclusive: #eab308;
+            --header-bg: #1e293b;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            padding-bottom: 60px; /* space for footer */
+        }
+
+        /* 1. Header */
+        header {
+            background-color: var(--header-bg);
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            margin: 0;
+        }
+
+        #connection-warning {
+            display: none;
+            color: var(--unsafe);
+            font-size: 0.875rem;
+            font-weight: bold;
+        }
+
+        /* 2. Alert Banner */
+        #alert-banner {
+            display: none;
+            background-color: var(--unsafe);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { background-color: #ef4444; }
+            50% { background-color: #991b1b; }
+            100% { background-color: #ef4444; }
+        }
+
+        /* Container */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* 3. Bed Status Card */
+        .status-card {
+            background-color: var(--card-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--repositioning); /* default grey */
+            margin: 0 auto 1rem auto;
+            transition: background-color 0.3s ease;
+        }
+
+        .status-card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-card p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* 4. Recent Events Feed */
+        .events-section h3 {
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            color: var(--text-muted);
+        }
+
+        .event-card {
+            background-color: var(--card-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bed-id {
+            font-weight: bold;
+        }
+
+        .timestamp {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge.unsafe_exit { background-color: var(--unsafe); color: white; }
+        .badge.safe_exit { background-color: var(--safe); color: white; }
+        .badge.repositioning { background-color: var(--repositioning); color: white; }
+        .badge.inconclusive { background-color: var(--inconclusive); color: black; }
+
+        .event-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+        }
+
+        .btn-ack {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .btn-ack:hover {
+            background-color: var(--border-color);
+        }
+
+        /* 5. Footer */
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--header-bg);
+            color: var(--text-muted);
+            text-align: center;
+            padding: 0.75rem;
+            font-size: 0.75rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🏥 Bed Exit Monitor</h1>
+        <div id="connection-warning">⚠️ Connection lost</div>
+    </header>
+
+    <div id="alert-banner">
+        ⚠️ UNSAFE EXIT DETECTED — <span id="alert-bed-id">BED_01</span>
+    </div>
+
+    <div class="container">
+        <div class="status-card">
+            <div id="status-circle" class="status-circle"></div>
+            <h2 id="status-bed-id">BED_01</h2>
+            <p id="status-time">Waiting for data...</p>
+        </div>
+
+        <div class="events-section">
+            <h3>Recent Events</h3>
+            <div id="events-feed">
+                <!-- Events will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Last synced: <span id="last-sync-time">Never</span>
+    </footer>
+
+    <script>
+        const API_BASE = '/api';
+        
+        const alertBanner = document.getElementById('alert-banner');
+        const alertBedId = document.getElementById('alert-bed-id');
+        const statusCircle = document.getElementById('status-circle');
+        const statusBedId = document.getElementById('status-bed-id');
+        const statusTime = document.getElementById('status-time');
+        const eventsFeed = document.getElementById('events-feed');
+        const lastSyncTime = document.getElementById('last-sync-time');
+        const connectionWarning = document.getElementById('connection-warning');
+
+        // Helper: human readable time difference
+        function timeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            
+            if (seconds < 60) return `${seconds} seconds ago`;
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes} minutes ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours} hours ago`;
+            return `${Math.floor(hours / 24)} days ago`;
+        }
+
+        function getColorForClassification(classification) {
+            switch(classification) {
+                case 'unsafe_exit': return 'var(--unsafe)';
+                case 'safe_exit': return 'var(--safe)';
+                case 'repositioning': return 'var(--repositioning)';
+                case 'inconclusive': return 'var(--inconclusive)';
+                default: return 'var(--repositioning)';
+            }
+        }
+
+        async function acknowledgeEvent(id) {
+            try {
+                await fetch(`${API_BASE}/events/${id}/acknowledge`, { method: 'PATCH' });
+                // Immediately re-fetch to update UI
+                fetchLatestEvent();
+                fetchEvents();
+            } catch (err) {
+                console.error("Acknowledge failed:", err);
+            }
+        }
+
+        async function fetchLatestEvent() {
+            try {
+                const response = await fetch(`${API_BASE}/events/latest`);
+                if (!response.ok) throw new Error("Network error");
+                
+                const data = await response.json();
+                connectionWarning.style.display = 'none';
+
+                if (data.status === 'no_events') {
+                    statusCircle.style.backgroundColor = 'var(--repositioning)';
+                    statusTime.textContent = 'No events recorded yet';
+                    alertBanner.style.display = 'none';
+                    return;
+                }
+
+                statusBedId.textContent = data.bed_id;
+                statusTime.textContent = `Last updated: ${new Date(data.timestamp).toLocaleTimeString()}`;
+                
+                if (data.classification === 'unsafe_exit' && data.acknowledged === 0) {
+                    statusCircle.style.backgroundColor = 'var(--unsafe)';
+                    alertBedId.textContent = data.bed_id;
+                    alertBanner.style.display = 'block';
+                } else if (data.classification === 'safe_exit') {
+                    statusCircle.style.backgroundColor = 'var(--safe)';
+                    alertBanner.style.display = 'none';
+                } else {
+                    statusCircle.style.backgroundColor = getColorForClassification(data.classification);
+                    alertBanner.style.display = 'none';
+                }
+                
+                lastSyncTime.textContent = new Date().toLocaleTimeString();
+
+            } catch (err) {
+                console.error("Fetch latest failed:", err);
+                connectionWarning.style.display = 'block';
+            }
+        }
+
+        async function fetchEvents() {
+            try {
+                const response = await fetch(`${API_BASE}/events?limit=10`);
+                if (!response.ok) throw new Error("Network error");
+                
+                const events = await response.json();
+                connectionWarning.style.display = 'none';
+                
+                eventsFeed.innerHTML = '';
+                
+                if (events.length === 0) {
+                    eventsFeed.innerHTML = '<p style="color: var(--text-muted);">No recent events.</p>';
+                    return;
+                }
+
+                events.forEach(event => {
+                    const card = document.createElement('div');
+                    card.className = 'event-card';
+                    
+                    const header = document.createElement('div');
+                    header.className = 'event-header';
+                    header.innerHTML = `
+                        <span class="bed-id">${event.bed_id}</span>
+                        <span class="timestamp">${timeAgo(event.timestamp)}</span>
+                    `;
+                    
+                    const details = document.createElement('div');
+                    details.className = 'event-details';
+                    
+                    const badgeClass = event.classification || 'inconclusive';
+                    const confidencePct = Math.round((event.confidence || 0) * 100);
+                    
+                    details.innerHTML = `
+                        <div>
+                            <span class="badge ${badgeClass}">${event.classification}</span>
+                            <span style="margin-left: 0.5rem; color: var(--text-muted);">${confidencePct}%</span>
+                        </div>
+                    `;
+                    
+                    if (event.acknowledged === 0) {
+                        const ackBtn = document.createElement('button');
+                        ackBtn.className = 'btn-ack';
+                        ackBtn.textContent = 'Acknowledge';
+                        ackBtn.onclick = () => acknowledgeEvent(event.id);
+                        details.appendChild(ackBtn);
+                    } else {
+                        const ackText = document.createElement('span');
+                        ackText.style.color = 'var(--text-muted)';
+                        ackText.style.fontSize = '0.75rem';
+                        ackText.textContent = 'Acknowledged';
+                        details.appendChild(ackText);
+                    }
+                    
+                    card.appendChild(header);
+                    card.appendChild(details);
+                    eventsFeed.appendChild(card);
+                });
+
+            } catch (err) {
+                console.error("Fetch events failed:", err);
+                connectionWarning.style.display = 'block';
+            }
+        }
+
+        // Initial fetch
+        fetchLatestEvent();
+        fetchEvents();
+
+        // Setup polling
+        setInterval(() => {
+            fetchLatestEvent();
+            fetchEvents();
+        }, 2000);
+
+    </script>
+</body>
+</html>
