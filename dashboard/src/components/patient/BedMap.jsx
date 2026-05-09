@@ -9,37 +9,46 @@ export default function BedMap({ position }) {
   else if (danger > 0.35) dotColor = '#D97706'; // warning
 
   return (
-    <div className="bg-surface rounded-xl shadow-sm border border-border p-5 h-full flex flex-col">
-      <h3 className="text-sm font-semibold text-text-primary mb-4">Live Bed Map</h3>
+    <div className="glass-card rounded-2xl p-6 h-full flex flex-col">
+      <h3 className="text-sm font-bold text-text-primary tracking-wide mb-6">Real-Time Patient Position</h3>
       
-      <div className="flex-1 relative w-full bg-background rounded-lg border border-border overflow-hidden min-h-[200px]">
+      <div className="flex-1 relative w-full bg-slate-100/50 rounded-2xl border border-border/50 overflow-hidden min-h-[300px] shadow-inner">
         {/* Bed outline */}
-        <div className="absolute inset-[10%] border-2 border-border rounded-md bg-white">
-          <div className="absolute top-2 left-[20%] right-[20%] h-[12%] bg-background rounded-sm border border-border" />
-          <div className="absolute top-[30%] left-[5%] right-[5%] h-px bg-border" />
+        <div className="absolute inset-[10%] border-2 border-border/30 rounded-xl bg-white shadow-sm">
+          <div className="absolute top-4 left-[25%] right-[25%] h-[15%] bg-slate-50 rounded-lg border border-border/20 shadow-sm" />
+          <div className="absolute top-[35%] left-[5%] right-[5%] h-px bg-slate-100" />
         </div>
 
         {/* Zones */}
-        <div className="absolute inset-[25%] border border-dashed border-safe/30 rounded" />
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-0 w-[15%] h-full bg-danger-light/30" />
-          <div className="absolute top-0 right-0 w-[15%] h-full bg-danger-light/30" />
-          <div className="absolute bottom-0 left-0 w-full h-[15%] bg-danger-light/30" />
-        </div>
-
-        {/* Dot */}
+        <div className="absolute inset-[25%] border border-dashed border-primary/20 rounded-xl" />
+        
+        {/* Dot with Aura Glow */}
         <motion.div
-          className="absolute w-4 h-4 rounded-full border-2 border-white shadow-sm"
-          style={{ backgroundColor: dotColor, left: `${position.x}%`, top: `${position.y}%`, transform: 'translate(-50%, -50%)' }}
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
+          className="absolute w-5 h-5 rounded-full border-2 border-white shadow-lg z-20"
+          style={{ 
+            backgroundColor: dotColor, 
+            left: `${position.x}%`, 
+            top: `${position.y}%`, 
+            transform: 'translate(-50%, -50%)',
+            boxShadow: `0 0 20px ${dotColor}80`
+          }}
+          animate={{ scale: [1, 1.15, 1] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         />
         
         <motion.div
-          className="absolute w-10 h-10 rounded-full blur-md"
-          style={{ backgroundColor: dotColor, left: `${position.x}%`, top: `${position.y}%`, transform: 'translate(-50%, -50%)', opacity: 0.2 }}
-          animate={{ opacity: [0.1, 0.3, 0.1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
+          className="absolute w-12 h-12 rounded-full blur-xl z-10"
+          style={{ 
+            backgroundColor: dotColor, 
+            left: `${position.x}%`, 
+            top: `${position.y}%`, 
+            transform: 'translate(-50%, -50%)' 
+          }}
+          animate={{ 
+            opacity: [0.1, 0.4, 0.1],
+            scale: [1, 1.4, 1]
+          }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 

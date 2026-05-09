@@ -1,110 +1,116 @@
+import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, ChevronRight, Image as ImageIcon, AlertTriangle, Info } from 'lucide-react';
+import { CheckCircle2, ChevronRight, AlertCircle, Clock, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePatients } from '../../context/PatientContext';
-import { classLabel, classColor, formatConfidence } from '../../utils/formatters';
+import { classLabel, formatConfidence } from '../../utils/formatters';
 
 export default function AlertFeed() {
   const { alerts, acknowledgeAlert } = usePatients();
   const navigate = useNavigate();
   const unackAlerts = alerts.filter(a => !a.acknowledged);
 
+  // Simple timer state to force re-renders for the countdown
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
-    <div className="bg-surface rounded-xl shadow-sm border border-border flex flex-col h-[600px] transition-colors duration-200">
-      <div className="p-4 border-b border-border flex items-center justify-between">
-        <h3 className="font-bold text-text-primary">Live Alerts</h3>
+    <div className="glass-card rounded-[2rem] flex flex-col h-[750px] overflow-hidden border-2 border-slate-100">
+      <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div>
+          <h3 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-primary" /> Active Incident Queue
+          </h3>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Real-time Triage</p>
+        </div>
         {unackAlerts.length > 0 && (
-          <span className="bg-danger-light text-danger text-xs font-bold px-2 py-0.5 rounded-full">
-            {unackAlerts.length} New
-          </span>
+          <motion.span 
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ repeat: Infinity, duration: 1.5 }}
+            className="bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg shadow-red-200"
+          >
+            {unackAlerts.length} PRIORITY
+          </motion.span>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        <AnimatePresence>
-          {unackAlerts.length === 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-full text-center p-6">
-              <div className="w-12 h-12 bg-safe-light rounded-full flex items-center justify-center mb-3">
-                <CheckCircle2 className="w-6 h-6 text-safe" />
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white/30">
+        <AnimatePresence mode="popLayout">
+          {unackAlerts.length === 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-full text-center p-8">
+              <div className="w-20 h-20 bg-emerald-50 rounded-[2rem] flex items-center justify-center mb-6 border border-emerald-100">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500" />
               </div>
-              <p className="font-semibold text-text-primary mb-1">No active alerts</p>
-              <p className="text-sm text-text-muted">All patients are currently safe.</p>
+              <h4 className="font-black text-slate-800 text-lg mb-1 tracking-tight">System Status: Stable</h4>
+              <p className="text-xs text-slate-400 font-medium">All monitored beds are currently secure.</p>
             </motion.div>
-          )}
+          ) : (
+            unackAlerts.map((alert, i) => {
+              const isUrgent = alert.classification === 'unsafe_exit';
+              const secondsElapsed = Math.floor((now - alert.timestamp) / 1000);
+              const isEscalated = secondsElapsed > 30;
 
-          {unackAlerts.map(alert => {
-            const cColor = classColor(alert.classification);
-            const isDanger = alert.classification === 'unsafe_exit';
-            
-            return (
-              <motion.div
-                key={alert.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className={`bg-surface border rounded-lg p-3 relative overflow-hidden group hover:shadow-md transition-all duration-200 ${
-                  isDanger ? 'border-danger/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 
-                  cColor === 'warning' ? 'border-warning/40' : 'border-border'
-                }`}
-              >
-                {/* Left accent border */}
-                <div className={`absolute left-0 top-0 bottom-0 w-1 ${cColor === 'danger' ? 'bg-danger' : cColor === 'warning' ? 'bg-warning' : 'bg-safe'} ${isDanger ? 'animate-pulse' : ''}`} />
-
-                <div className="flex gap-3 pl-2">
-                  {/* Thumbnail placeholder */}
-                  <div className="w-16 h-12 bg-background rounded shrink-0 flex items-center justify-center text-text-muted border border-border">
-                    <ImageIcon className="w-5 h-5 opacity-50" />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-1">
-                      <p className="text-sm font-bold text-text-primary truncate">{alert.patientName}</p>
-                      <span className="text-[10px] text-text-muted whitespace-nowrap ml-2">
-                        {formatDistanceToNow(alert.timestamp, { addSuffix: true })}
-                      </span>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      <span className={`flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                        cColor === 'danger' ? 'bg-danger-light text-danger' : cColor === 'warning' ? 'bg-warning-light text-warning' : 'bg-safe-light text-safe'
-                      }`}>
-                        {cColor === 'danger' ? <AlertTriangle className="w-3 h-3" /> : <Info className="w-3 h-3" />}
-                        {classLabel(alert.classification)}
-                      </span>
-                      <span className="text-[10px] text-text-muted bg-background px-1.5 py-0.5 rounded-full border border-border">
-                        {formatConfidence(alert.confidence)} Conf
-                      </span>
-                      <span className="text-[10px] text-text-muted bg-background px-1.5 py-0.5 rounded-full border border-border">
-                        {alert.bedId}
-                      </span>
+              return (
+                <motion.div
+                  key={alert.id}
+                  layout
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ 
+                    opacity: 1, 
+                    x: 0,
+                    scale: i === 0 ? 1 : 0.98
+                  }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className={`border-2 rounded-[1.5rem] p-5 relative overflow-hidden transition-all duration-500 ${
+                    isUrgent ? (isEscalated ? 'border-red-500 bg-red-50/50 shadow-xl shadow-red-100' : 'border-red-200 bg-white shadow-md') : 'border-amber-100 bg-white'
+                  }`}
+                >
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isUrgent ? 'bg-red-600 text-white shadow-lg' : 'bg-amber-500 text-white'}`}>
+                          <AlertCircle className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-slate-800 tracking-tight">{alert.patientName}</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{alert.ward} • {alert.bedId}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg ${isEscalated ? 'bg-red-600 text-white animate-pulse' : 'bg-slate-100 text-slate-500'}`}>
+                          <Clock className="w-3 h-3" /> {secondsElapsed}s
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="p-3 rounded-xl bg-slate-50/50 border border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Observation</p>
+                      <p className="text-xs font-black text-slate-700">{classLabel(alert.classification)} detected with {Math.round(alert.confidence * 100)}% accuracy</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
                       <button 
                         onClick={() => acknowledgeAlert(alert.id)}
-                        className="flex-1 bg-primary text-white hover:bg-primary/90 text-[11px] font-semibold py-1.5 rounded transition-colors"
+                        className="flex-1 bg-slate-900 text-white text-[10px] font-black py-3 rounded-xl hover:bg-[#0052CC] transition-all shadow-lg shadow-slate-200 uppercase tracking-wider"
                       >
-                        On my way
-                      </button>
-                      <button 
-                        onClick={() => acknowledgeAlert(alert.id)}
-                        className="flex-1 bg-background hover:bg-border text-text-muted hover:text-text-primary text-[11px] font-medium py-1.5 rounded transition-colors"
-                      >
-                        Dismiss
+                        Acknowledge
                       </button>
                       <button 
                         onClick={() => navigate(`/patient/${alert.patientId}`)}
-                        className="w-8 h-8 flex flex-shrink-0 items-center justify-center bg-primary-light hover:bg-primary text-primary hover:text-white rounded transition-colors"
+                        className="w-12 h-12 flex items-center justify-center bg-white border-2 border-slate-100 text-slate-400 hover:text-primary hover:border-primary rounded-xl transition-all"
                       >
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-5 h-5" />
                       </button>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
+                </motion.div>
+              );
+            })
+          )}
         </AnimatePresence>
       </div>
     </div>

@@ -11,7 +11,7 @@ export const METRICS = [
 
 export default function SixGraphGrid({ data }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
       {METRICS.map((m, i) => (
         <MetricGraph key={m.key} data={data} dataKey={m.key} label={m.label} color={m.color} delay={i * 0.05} />
       ))}

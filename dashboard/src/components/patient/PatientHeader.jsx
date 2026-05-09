@@ -11,7 +11,7 @@ export default function PatientHeader({ patient }) {
   const initials = patient.name.split(' ').map(n => n[0]).join('').substring(0, 2);
 
   return (
-    <div className="bg-surface rounded-xl shadow-sm border border-border p-5 mb-6">
+    <div className="glass-card rounded-2xl p-6 mb-8 backdrop-blur-md bg-surface/80 sticky top-4 z-10">
       <div className="flex items-start gap-5">
         <div className="w-16 h-16 rounded-full bg-primary-light flex items-center justify-center text-primary text-xl font-bold shrink-0">
           {initials}

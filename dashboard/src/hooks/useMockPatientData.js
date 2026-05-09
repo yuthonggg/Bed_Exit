@@ -51,7 +51,7 @@ export function useMockPatientData() {
       if (alertTimer.current >= 60 + Math.floor(Math.random()*60)) {
         alertTimer.current = 0;
         const rp = PATIENTS[Math.floor(Math.random()*PATIENTS.length)];
-        const cls = CLASSIFICATIONS[Math.floor(Math.random()*3)];
+        const cls = 'unsafe_exit'; // Only unsafe_exit will send alert
         setAlerts(prev => [{
           id: `ALT-${now}`,
           patientId: rp.id,
@@ -77,15 +77,42 @@ export function useMockPatientData() {
     setAlerts(prev => prev.map(a => ({ ...a, acknowledged: true })));
   }, []);
 
+  const getRiskTrend = useCallback((patientId) => {
+    const d = streams[patientId];
+    if (!d || d.length < 30) return 'stable';
+    const recent = d.slice(-15);
+    const older = d.slice(-30, -15);
+    const recentDist = recent.reduce((acc, p) => acc + Math.sqrt(Math.pow(p.x - 50, 2) + Math.pow(p.y - 50, 2)), 0) / 15;
+    const olderDist = older.reduce((acc, p) => acc + Math.sqrt(Math.pow(p.x - 50, 2) + Math.pow(p.y - 50, 2)), 0) / 15;
+    if (recentDist > olderDist * 1.3) return 'increasing';
+    if (recentDist < olderDist * 0.7) return 'decreasing';
+    return 'stable';
+  }, [streams]);
+
   const getPatientStatus = useCallback((patientId) => {
+    // Check for unacknowledged critical alerts (Only unsafe_exit)
+    const hasActiveAlert = alerts.some(a => a.patientId === patientId && !a.acknowledged && a.classification === 'unsafe_exit');
+    if (hasActiveAlert) return 'alert';
+
     const d = streams[patientId];
     if (!d || d.length === 0) return 'safe';
     const last = d[d.length - 1];
     const dist = Math.sqrt(Math.pow(last.x - 50, 2) + Math.pow(last.y - 50, 2));
-    if (dist > 35) return 'alert';
+    
+    // Only use distance for 'at_risk' (amber), 'alert' (red) is strictly event-driven now
     if (dist > 20) return 'at_risk';
     return 'safe';
-  }, [streams]);
+  }, [streams, alerts]);
 
-  return { patients: PATIENTS, streams, alerts, acknowledgeAlert, acknowledgeAll, getPatientStatus };
+  const getPriorityScore = useCallback((patientId) => {
+    const status = getPatientStatus(patientId);
+    const trend = getRiskTrend(patientId);
+    let score = 0;
+    if (status === 'alert') score += 1000;
+    if (status === 'at_risk') score += 500;
+    if (trend === 'increasing') score += 200;
+    return score;
+  }, [getPatientStatus, getRiskTrend]);
+
+  return { patients: PATIENTS, streams, alerts, acknowledgeAlert, acknowledgeAll, getPatientStatus, getRiskTrend, getPriorityScore };
 }

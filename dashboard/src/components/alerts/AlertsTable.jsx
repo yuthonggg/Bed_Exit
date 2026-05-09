@@ -16,6 +16,7 @@ export default function AlertsTable() {
   const wards = ['All', ...new Set(alerts.map(a => a.ward))];
 
   const filteredAlerts = useMemo(() => alerts.filter(a => {
+    if (a.classification !== 'unsafe_exit') return false;
     if (filter === 'unacknowledged' && a.acknowledged) return false;
     if (filter === 'acknowledged' && !a.acknowledged) return false;
     if (ward !== 'All' && a.ward !== ward) return false;

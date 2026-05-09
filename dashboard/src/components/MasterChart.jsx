@@ -1,4 +1,4 @@
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
 import LiveIndicator from './LiveIndicator';
 
@@ -17,44 +17,70 @@ export default function MasterChart({ data, selected, onToggle }) {
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.4 }}
-      className="bg-[#1e293b]/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5"
+      className="glass-card rounded-2xl p-6"
     >
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-white tracking-wide">Pattern Comparison</h3>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-sm font-bold text-text-primary tracking-wide">Dynamic Pattern Analysis</h3>
         <LiveIndicator />
       </div>
 
       {/* Toggle buttons */}
-      <div className="flex flex-wrap gap-1.5 mb-4">
+      <div className="flex flex-wrap gap-2 mb-6">
         {METRICS.map(m => (
           <button
             key={m.key}
             onClick={() => onToggle(m.key)}
-            className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all duration-200 ${
+            className={`px-4 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all duration-300 shadow-sm ${
               selected.includes(m.key)
-                ? 'border-transparent text-white shadow-lg'
-                : 'border-slate-600/50 text-slate-500 hover:text-slate-300 bg-transparent'
+                ? 'border-transparent text-white'
+                : 'border-border bg-white/50 text-text-muted hover:text-text-primary'
             }`}
-            style={selected.includes(m.key) ? { backgroundColor: m.color + '30', color: m.color, borderColor: m.color + '60' } : {}}
+            style={selected.includes(m.key) ? { backgroundColor: m.color, boxShadow: `0 4px 12px ${m.color}40` } : {}}
           >
             {m.label}
           </button>
         ))}
       </div>
 
-      <ResponsiveContainer width="100%" height={260}>
-        <LineChart data={data} syncId="bed-sync">
-          <XAxis dataKey="time" tick={{ fill: '#64748b', fontSize: 9 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-          <YAxis tick={{ fill: '#64748b', fontSize: 9 }} width={36} axisLine={false} tickLine={false} />
-          <Tooltip
-            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 10, fontSize: 12, color: '#e2e8f0' }}
-            labelStyle={{ color: '#94a3b8' }}
-          />
-          {METRICS.filter(m => selected.includes(m.key)).map(m => (
-            <Line key={m.key} type="monotone" dataKey={m.key} stroke={m.color} strokeWidth={2} dot={false} isAnimationActive={false} />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
+      <div className="h-[280px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} syncId="bed-sync">
+            <defs>
+              {METRICS.map(m => (
+                <filter key={`glow-${m.key}`} id={`glow-${m.key}`} x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              ))}
+            </defs>
+            <XAxis dataKey="time" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 500 }} axisLine={false} tickLine={false} interval="preserveStartEnd" dy={10} />
+            <YAxis tick={{ fill: '#64748b', fontSize: 10, fontWeight: 500 }} width={40} axisLine={false} tickLine={false} />
+            <Tooltip
+              contentStyle={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.9)', 
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(0, 82, 204, 0.1)', 
+                borderRadius: '12px', 
+                fontSize: '11px', 
+                fontWeight: 'bold',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+              }}
+            />
+            {METRICS.filter(m => selected.includes(m.key)).map(m => (
+              <Line 
+                key={m.key} 
+                type="monotone" 
+                dataKey={m.key} 
+                stroke={m.color} 
+                strokeWidth={3} 
+                dot={false} 
+                isAnimationActive={false} 
+                filter={`url(#glow-${m.key})`}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </motion.div>
   );
 }

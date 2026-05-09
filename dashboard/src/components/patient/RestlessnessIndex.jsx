@@ -16,38 +16,67 @@ export default function RestlessnessIndex({ data }) {
   }
 
   let color = 'text-safe';
-  let bgColor = 'bg-safe';
-  let label = 'Calm';
-  if (score > 60) { color = 'text-danger'; bgColor = 'bg-danger'; label = 'High Risk'; }
-  else if (score > 30) { color = 'text-warning'; bgColor = 'bg-warning'; label = 'Restless'; }
+  let gradientStops = ['#10B981', '#10B981']; // safe
+  let label = 'Stable';
+  
+  if (score > 60) { 
+    color = 'text-danger'; 
+    gradientStops = ['#F59E0B', '#EF4444']; 
+    label = 'Critical Mobility'; 
+  }
+  else if (score > 30) { 
+    color = 'text-warning'; 
+    gradientStops = ['#10B981', '#F59E0B']; 
+    label = 'Active Shifting'; 
+  }
 
   return (
-    <div className="bg-surface rounded-xl shadow-sm border border-border p-6 flex flex-col items-center justify-center h-[300px] transition-colors duration-200 relative overflow-hidden">
-      <h3 className="absolute top-4 left-4 text-sm font-semibold text-text-primary">Mobility Score</h3>
+    <div className="glass-card rounded-2xl p-8 flex flex-col items-center justify-center min-h-[360px] relative overflow-hidden group">
+      <h3 className="absolute top-6 left-6 text-sm font-bold text-text-primary tracking-wide">Dynamic Mobility Index</h3>
       
-      <div className="relative w-40 h-40 flex items-center justify-center mb-2">
-        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-border" />
+      <div className="relative w-52 h-52 flex items-center justify-center mb-6">
+        <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 100 100">
+          <defs>
+            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor={gradientStops[0]} />
+              <stop offset="100%" stopColor={gradientStops[1]} />
+            </linearGradient>
+            <filter id="ringGlow">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+          <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" strokeWidth="6" className="text-slate-100 dark:text-slate-800" />
           <motion.circle 
-            cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" 
-            strokeDasharray="283"
-            strokeDashoffset={283 - (283 * score) / 100}
-            className={`${color} transition-all duration-1000 ease-out`}
+            cx="50" cy="50" r="44" fill="none" stroke="url(#scoreGradient)" strokeWidth={score > 0 ? 8 : 0} 
+            strokeDasharray="276.5"
+            strokeDashoffset={276.5 - (276.5 * score) / 100}
+            className="transition-all duration-1000 ease-out"
             strokeLinecap="round"
+            filter="url(#ringGlow)"
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={`text-5xl font-bold ${color}`}>{score}</span>
-          <span className="text-xs text-text-muted mt-1">/ 100</span>
+          <motion.span 
+            key={score}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className={`text-7xl font-extrabold tracking-tighter ${color}`}
+          >
+            {score}
+          </motion.span>
+          <span className="premium-header mt-1">/ 100 Risk</span>
         </div>
       </div>
       
-      <p className={`text-lg font-bold ${color}`}>{label}</p>
-      <p className="text-sm text-text-muted mt-1 text-center px-4">
-        {score > 60 ? "Patient is highly mobile. Risk of unsafe exit." : 
-         score > 30 ? "Patient is shifting position frequently." : 
-         "Patient is resting comfortably."}
-      </p>
+      <div className="text-center">
+        <p className={`text-xl font-bold ${color} tracking-tight mb-2`}>{label}</p>
+        <p className="text-sm text-text-muted max-w-[280px] leading-relaxed">
+          {score > 60 ? "Immediate attention required. High probability of bed exit attempt." : 
+           score > 30 ? "Moderate restlessness detected. Monitor patient for shifting behavior." : 
+           "Baseline stability maintained. Patient is resting within safe parameters."}
+        </p>
+      </div>
     </div>
   );
 }
