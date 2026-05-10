@@ -1,7 +1,15 @@
 import { motion } from 'framer-motion';
 
 export default function BedMap({ position }) {
-  const dist = Math.sqrt(Math.pow(position.x - 50, 2) + Math.pow(position.y - 50, 2));
+  const x = Math.max(0, Math.min(100, Number(position.x) || 0));
+  const y = Math.max(0, Math.min(100, Number(position.y) || 0));
+  const rawX = Number.isFinite(Number(position.rawX)) ? Number(position.rawX) : x;
+  const rawY = Number.isFinite(Number(position.rawY)) ? Number(position.rawY) : y;
+  const bedInset = 10;
+  const bedSpan = 100 - bedInset * 2;
+  const markerX = bedInset + (x / 100) * bedSpan;
+  const markerY = bedInset + (y / 100) * bedSpan;
+  const dist = Math.sqrt(Math.pow(x - 50, 2) + Math.pow(y - 50, 2));
   const danger = Math.min(1, dist / 40);
   
   let dotColor = '#16A34A'; // safe
@@ -27,8 +35,8 @@ export default function BedMap({ position }) {
           className="absolute w-5 h-5 rounded-full border-2 border-white shadow-lg z-20"
           style={{ 
             backgroundColor: dotColor, 
-            left: `${position.x}%`, 
-            top: `${position.y}%`, 
+            left: `${markerX}%`, 
+            top: `${markerY}%`, 
             transform: 'translate(-50%, -50%)',
             boxShadow: `0 0 20px ${dotColor}80`
           }}
@@ -40,8 +48,8 @@ export default function BedMap({ position }) {
           className="absolute w-12 h-12 rounded-full blur-xl z-10"
           style={{ 
             backgroundColor: dotColor, 
-            left: `${position.x}%`, 
-            top: `${position.y}%`, 
+            left: `${markerX}%`, 
+            top: `${markerY}%`, 
             transform: 'translate(-50%, -50%)' 
           }}
           animate={{ 
@@ -59,7 +67,9 @@ export default function BedMap({ position }) {
           <span className="flex items-center gap-1.5 text-text-muted"><div className="w-2 h-2 rounded-full bg-danger" /> Risk</span>
         </div>
         <div className="text-center font-mono text-xs font-semibold text-text-primary bg-background py-1.5 rounded border border-border">
-          X: {(position.x/100).toFixed(2)} | Y: {(position.y/100).toFixed(2)}
+          Raw X: {rawX.toFixed(2)} | Raw Y: {rawY.toFixed(2)}
+          <span className="mx-2 text-text-muted">/</span>
+          Dot X: {x.toFixed(0)} | Dot Y: {y.toFixed(0)}
         </div>
       </div>
     </div>

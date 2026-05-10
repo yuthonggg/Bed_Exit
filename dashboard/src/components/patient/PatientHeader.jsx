@@ -1,12 +1,13 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Radio } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../ui/StatusBadge';
 import { usePatients } from '../../context/PatientContext';
 
 export default function PatientHeader({ patient }) {
   const navigate = useNavigate();
-  const { getPatientStatus } = usePatients();
+  const { getPatientStatus, getPatientDataSource } = usePatients();
   const status = getPatientStatus(patient.id);
+  const dataSource = getPatientDataSource(patient.id);
 
   const initials = patient.name.split(' ').map(n => n[0]).join('').substring(0, 2);
 
@@ -27,6 +28,16 @@ export default function PatientHeader({ patient }) {
                 <span>{patient.ward} • {patient.bedId}</span>
                 <span className="w-1 h-1 rounded-full bg-border" />
                 <span>Admitted: {patient.admitted}</span>
+                <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2 py-1 rounded-lg border ${
+                  dataSource === 'live'
+                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                    : dataSource === 'waiting'
+                      ? 'bg-amber-50 text-amber-600 border-amber-100'
+                      : 'bg-slate-50 text-slate-500 border-slate-200'
+                }`}>
+                  <Radio className="w-3 h-3" />
+                  {dataSource === 'live' ? 'Live Arduino Data' : dataSource === 'waiting' ? 'Waiting for Arduino Data' : 'Synthetic Demo Data'}
+                </span>
               </div>
             </div>
             <div className="flex flex-col items-end gap-3">

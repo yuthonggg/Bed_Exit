@@ -50,18 +50,23 @@ def capture() -> list[str]:
         
         for i in range(config.CAMERA_CAPTURE_COUNT):
             file_path = os.path.join(config.CAMERA_SAVE_DIR, f"capture_{timestamp}_{i}.jpg")
+            saved = False
             
             if HAS_PICAMERA and picam2 is not None:
                 picam2.capture_file(file_path)
+                saved = True
             elif HAS_CV2:
-                # Use OpenCV to capture from external USB camera (index 1)
-                cap = cv2.VideoCapture(1)
-                
-                # If index 1 fails, sometimes Windows puts it at index 2
-                if not cap.isOpened():
-                    cap = cv2.VideoCapture(2)
+                cap = None
+                for camera_index in config.USB_CAMERA_INDICES:
+                    backend = cv2.CAP_DSHOW if os.name == "nt" else cv2.CAP_ANY
+                    candidate = cv2.VideoCapture(camera_index, backend)
+                    if candidate.isOpened():
+                        cap = candidate
+                        logging.info(f"Using USB camera index {camera_index}")
+                        break
+                    candidate.release()
 
-                if cap.isOpened():
+                if cap and cap.isOpened():
                     # Give the camera 2 seconds to adjust auto-exposure
                     time.sleep(2)
                     # Discard first 5 frames to clear the buffer
@@ -70,16 +75,21 @@ def capture() -> list[str]:
                     
                     ret, frame = cap.read()
                     if ret:
-                        cv2.imwrite(file_path, frame)
+                        saved = cv2.imwrite(file_path, frame)
                     cap.release()
                 else:
-                    logging.warning("Could not open USB camera via OpenCV")
+                    logging.warning(f"Could not open USB camera via OpenCV. Tried indexes: {config.USB_CAMERA_INDICES}")
             else:
                 # Simulation mode: create a dummy placeholder 1x1 JPEG image
                 with open(file_path, "wb") as f:
                     f.write(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00\xff\xdb\x00\x43\x00\xff\xd9")
+                saved = True
             
-            saved_files.append(file_path)
+            if saved:
+                saved_files.append(file_path)
+            else:
+                logging.warning(f"Failed to save camera frame to {file_path}")
+
             if i < config.CAMERA_CAPTURE_COUNT - 1:
                 time.sleep(0.3)
                 

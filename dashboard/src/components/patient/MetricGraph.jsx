@@ -5,6 +5,10 @@ import LiveIndicator from '../ui/LiveIndicator';
 export default function MetricGraph({ data, dataKey, label, color, delay }) {
   const gradientId = `grad-${dataKey}`;
   const glowId = `glow-${dataKey}`;
+  const latestPoint = data?.length ? data[data.length - 1] : null;
+  const latestValue = latestPoint && Number.isFinite(Number(latestPoint[dataKey]))
+    ? Number(latestPoint[dataKey]).toFixed(3)
+    : '--';
 
   return (
     <motion.div
@@ -16,8 +20,18 @@ export default function MetricGraph({ data, dataKey, label, color, delay }) {
       <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: color }} />
       
       <div className="flex items-center justify-between mb-4 pl-3">
-        <h3 className="text-xs font-bold text-text-primary tracking-wide uppercase opacity-80">{label}</h3>
-        <LiveIndicator />
+        <div>
+          <h3 className="text-xs font-bold text-text-primary tracking-wide uppercase opacity-80">{label}</h3>
+          <p className="mt-1 font-mono text-lg font-black" style={{ color }}>
+            {latestValue}
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <LiveIndicator />
+          <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest">
+            {data?.length || 0} pts
+          </span>
+        </div>
       </div>
 
       <div className="h-[140px] w-full">

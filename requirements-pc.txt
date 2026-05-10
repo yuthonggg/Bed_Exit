@@ -1,0 +1,8 @@
+pyserial
+opencv-python
+requests
+openai
+flask
+flask-cors
+python-dotenv
+pillow

@@ -1,15 +1,16 @@
 import { LineChart, Line, YAxis, ResponsiveContainer } from 'recharts';
-import { ChevronRight, TrendingUp, TrendingDown, AlertCircle, Clock, User } from 'lucide-react';
+import { ChevronRight, TrendingUp, TrendingDown, AlertCircle, Clock, User, Radio } from 'lucide-react';
 import { motion } from 'framer-motion';
 import StatusBadge from '../ui/StatusBadge';
 import { usePatients } from '../../context/PatientContext';
 
 export default function PatientCard({ patient, onSelect }) {
-  const { streams, getPatientStatus, getRiskTrend } = usePatients();
+  const { streams, getPatientStatus, getRiskTrend, getPatientDataSource } = usePatients();
   const data = streams[patient.id] || [];
   const status = getPatientStatus(patient.id);
   const trend = getRiskTrend(patient.id);
   const latest = data.length > 0 ? data[data.length - 1] : null;
+  const dataSource = getPatientDataSource(patient.id);
 
   const isAlert = status === 'alert';
   const isRisk = status === 'at_risk';
@@ -56,6 +57,16 @@ export default function PatientCard({ patient, onSelect }) {
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200/50">
                 {patient.bedId}
               </span>
+              <span className={`inline-flex items-center gap-1 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border ${
+                dataSource === 'live'
+                  ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                  : dataSource === 'waiting'
+                    ? 'bg-amber-50 text-amber-600 border-amber-100'
+                    : 'bg-slate-50 text-slate-400 border-slate-200/50'
+              }`}>
+                <Radio className="w-2.5 h-2.5" />
+                {dataSource === 'live' ? 'Live' : dataSource === 'waiting' ? 'Waiting' : 'Sim'}
+              </span>
               <div className="flex items-center gap-1">
                 {trend === 'increasing' ? <TrendingUp className="w-2.5 h-2.5 text-red-500" /> : <TrendingDown className="w-2.5 h-2.5 text-emerald-500" />}
                 <span className={`text-[8px] font-black uppercase ${trend === 'increasing' ? 'text-red-500' : 'text-emerald-500'}`}>
@@ -82,7 +93,7 @@ export default function PatientCard({ patient, onSelect }) {
                 <YAxis domain={['auto', 'auto']} hide />
                 <Line 
                   type="monotone" 
-                  dataKey="x" 
+                  dataKey="displayX" 
                   stroke={getStatusColor()} 
                   strokeWidth={isAlert ? 4 : 2} 
                   dot={false} 

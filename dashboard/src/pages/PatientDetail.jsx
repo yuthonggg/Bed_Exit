@@ -24,12 +24,39 @@ export default function PatientDetail() {
   
   if (!patient) return <Navigate to="/" />;
 
-  const position = rawData.length > 0 ? rawData[rawData.length - 1] : { x: 50, y: 50 };
+  const latest = rawData.length > 0 ? rawData[rawData.length - 1] : null;
+  const position = latest ? {
+    x: latest.displayX ?? latest.x,
+    y: latest.displayY ?? latest.y,
+    rawX: latest.x,
+    rawY: latest.y,
+  } : { x: 50, y: 50, rawX: 50, rawY: 50 };
 
   return (
     <Layout title={`${patient.name} Analysis`}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="max-w-[1600px] mx-auto pb-12">
         <PatientHeader patient={patient} />
+
+        {patient.id === 'P001' && (
+          <div className="mb-8 grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              ['Raw X', latest?.x],
+              ['Raw Y', latest?.y],
+              ['Bed Dot X', latest?.displayX],
+              ['Bed Dot Y', latest?.displayY],
+              ['Risk', latest?.risk],
+              ['Z-Score', latest?.zScore],
+              ['Status', latest?.status || 'Waiting'],
+            ].map(([label, value]) => (
+              <div key={label} className="bg-white border border-border rounded-xl px-4 py-3 shadow-sm">
+                <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{label}</p>
+                <p className="mt-1 font-mono text-lg font-black text-text-primary">
+                  {typeof value === 'number' ? value.toFixed(3) : value ?? '--'}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
         
         {/* Toggle Bar - Segmented Control */}
         <div className="flex justify-end mb-8">
@@ -66,6 +93,8 @@ export default function PatientDetail() {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                     <MetricGraph data={enrichedData} dataKey="x" label="Lateral Displacement (X)" color="#0052CC" delay={0} />
                     <MetricGraph data={enrichedData} dataKey="y" label="Longitudinal Position (Y)" color="#10B981" delay={0.05} />
+                    <MetricGraph data={enrichedData} dataKey="risk" label="Sensor Risk Score" color="#DC2626" delay={0.1} />
+                    <MetricGraph data={enrichedData} dataKey="zScore" label="Risk Z-Score" color="#D97706" delay={0.15} />
                   </div>
                   <RestlessnessIndex data={enrichedData} />
                 </motion.div>

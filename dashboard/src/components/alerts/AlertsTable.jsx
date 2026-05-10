@@ -16,7 +16,6 @@ export default function AlertsTable() {
   const wards = ['All', ...new Set(alerts.map(a => a.ward))];
 
   const filteredAlerts = useMemo(() => alerts.filter(a => {
-    if (a.classification !== 'unsafe_exit') return false;
     if (filter === 'unacknowledged' && a.acknowledged) return false;
     if (filter === 'acknowledged' && !a.acknowledged) return false;
     if (ward !== 'All' && a.ward !== ward) return false;
@@ -115,7 +114,11 @@ export default function AlertsTable() {
                   </td>
                   <td className="p-4 w-20">
                     <div className="w-12 h-8 bg-background border border-border rounded flex items-center justify-center text-text-muted opacity-60 backdrop-blur-sm relative overflow-hidden">
-                      <ImageIcon className="w-4 h-4" />
+                      {alert.imageUrl ? (
+                        <img src={alert.imageUrl} alt="Incident evidence" className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon className="w-4 h-4" />
+                      )}
                     </div>
                   </td>
                   <td className="p-4">

@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import json
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'events.db')
 SCHEMA_PATH = os.path.join(os.path.dirname(__file__), 'schema.sql')
@@ -14,18 +15,34 @@ def init_db():
     with get_db_connection() as conn:
         with open(SCHEMA_PATH, 'r') as f:
             conn.executescript(f.read())
+        _ensure_column(conn, 'events', 'sensor_data', 'TEXT')
         conn.commit()
 
-def insert_event(bed_id: str, classification: str, confidence: float, image_path: str, timestamp: str) -> int:
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
+    cursor = conn.cursor()
+    cursor.execute(f'PRAGMA table_info({table})')
+    existing_columns = {row['name'] for row in cursor.fetchall()}
+    if column not in existing_columns:
+        cursor.execute(f'ALTER TABLE {table} ADD COLUMN {column} {definition}')
+
+def insert_event(
+    bed_id: str,
+    classification: str,
+    confidence: float,
+    image_path: str,
+    timestamp: str,
+    sensor_data: dict | None = None,
+) -> int:
     """Inserts an event into the DB and returns the new row ID."""
+    sensor_data_json = sensor_data if isinstance(sensor_data, str) else json.dumps(sensor_data) if sensor_data else None
     with get_db_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             '''
-            INSERT INTO events (bed_id, classification, confidence, image_path, timestamp)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO events (bed_id, classification, confidence, image_path, sensor_data, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?)
             ''',
-            (bed_id, classification, confidence, image_path, timestamp)
+            (bed_id, classification, confidence, image_path, sensor_data_json, timestamp)
         )
         conn.commit()
         return cursor.lastrowid
@@ -75,3 +92,57 @@ def acknowledge_event(event_id: int) -> bool:
         )
         conn.commit()
         return cursor.rowcount > 0
+
+def insert_sensor_reading(
+    bed_id: str,
+    x: float,
+    y: float,
+    risk: float | None,
+    z_score: float | None,
+    status: str,
+    timestamp: str,
+) -> int:
+    """Inserts one sensor reading and returns the new row ID."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            '''
+            INSERT INTO sensor_readings (bed_id, x, y, risk, z_score, status, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''',
+            (bed_id, x, y, risk, z_score, status, timestamp)
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+def get_recent_sensor_readings(bed_id: str | None = None, limit: int = 120) -> list[dict]:
+    """Returns recent sensor readings, oldest first for chart rendering."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if bed_id:
+            cursor.execute(
+                '''
+                SELECT * FROM (
+                    SELECT * FROM sensor_readings
+                    WHERE bed_id = ?
+                    ORDER BY timestamp DESC
+                    LIMIT ?
+                )
+                ORDER BY timestamp ASC
+                ''',
+                (bed_id, limit)
+            )
+        else:
+            cursor.execute(
+                '''
+                SELECT * FROM (
+                    SELECT * FROM sensor_readings
+                    ORDER BY timestamp DESC
+                    LIMIT ?
+                )
+                ORDER BY timestamp ASC
+                ''',
+                (limit,)
+            )
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]

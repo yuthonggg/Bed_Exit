@@ -9,7 +9,7 @@ import { classLabel, formatConfidence } from '../../utils/formatters';
 export default function AlertFeed() {
   const { alerts, acknowledgeAlert } = usePatients();
   const navigate = useNavigate();
-  const unackAlerts = alerts.filter(a => !a.acknowledged);
+  const unackAlerts = alerts.filter(a => !a.acknowledged && a.classification === 'unsafe_exit');
 
   // Simple timer state to force re-renders for the countdown
   const [now, setNow] = useState(Date.now());

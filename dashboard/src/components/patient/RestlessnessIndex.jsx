@@ -7,11 +7,16 @@ export default function RestlessnessIndex({ data }) {
     // Average the last 10 data points for smoothness
     const recent = data.slice(-10);
     const sum = recent.reduce((acc, pt) => {
-      const mag = Math.abs(pt.dydx) + Math.abs(pt.d2ydx2) + Math.abs(pt.dxdy) + Math.abs(pt.d2xdy2);
+      if (Number.isFinite(Number(pt.risk))) return acc + Number(pt.risk);
+
+      const mag =
+        Math.abs(Number(pt.dydx) || 0) +
+        Math.abs(Number(pt.d2ydx2) || 0) +
+        Math.abs(Number(pt.dxdy) || 0) +
+        Math.abs(Number(pt.d2xdy2) || 0);
       return acc + mag;
     }, 0);
     const avg = sum / recent.length;
-    // Cap at 100
     score = Math.min(100, Math.round(avg * 5));
   }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ChevronRight, Activity, Zap, ChevronDown, Map as MapIcon, Image as ImageIcon } from 'lucide-react';
+import { Search, ChevronRight, Activity, Zap, ChevronDown, Radio } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import { usePatients } from '../context/PatientContext';
 import { useDerivatives } from '../hooks/useDerivatives';
@@ -14,7 +14,7 @@ import RestlessnessIndex from '../components/patient/RestlessnessIndex';
 import MetricGraph from '../components/patient/MetricGraph';
 
 export default function Patients() {
-  const { patients, streams, getPatientStatus } = usePatients();
+  const { patients, streams, getPatientStatus, getPatientDataSource } = usePatients();
   const [selectedId, setSelectedId] = useState(patients[0]?.id);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
@@ -28,9 +28,10 @@ export default function Patients() {
     const data = streams[p.id] || [];
     if (data.length > 0) {
       const recent = data.slice(-10);
-      const avg = recent.reduce((acc, pt) => acc + (Math.abs(pt.dydx) + Math.abs(pt.d2ydx2)), 0) / recent.length;
-      if (avg * 5 > 60) return 'urgent';
-      if (avg * 5 > 30) return 'monitoring';
+      if (recent.some(pt => pt.status === 'Critical')) return 'urgent';
+      const avgRisk = recent.reduce((acc, pt) => acc + (Number(pt.risk) || 0), 0) / recent.length;
+      if (avgRisk > 40) return 'urgent';
+      if (avgRisk > 25 || recent.some(pt => pt.status === 'Warning')) return 'monitoring';
     }
     return 'stable';
   };
@@ -61,7 +62,14 @@ export default function Patients() {
   const selectedPatient = patients.find(p => p.id === selectedId) || patients[0];
   const rawData = streams[selectedId] || [];
   const enrichedData = useDerivatives(rawData);
-  const position = rawData.length > 0 ? rawData[rawData.length - 1] : { x: 50, y: 50 };
+  const latest = rawData.length > 0 ? rawData[rawData.length - 1] : null;
+  const position = latest ? {
+    x: latest.displayX ?? latest.x,
+    y: latest.displayY ?? latest.y,
+    rawX: latest.x,
+    rawY: latest.y,
+  } : { x: 50, y: 50, rawX: 50, rawY: 50 };
+  const selectedDataSource = getPatientDataSource(selectedPatient.id);
 
   return (
     <Layout title="Clinical Monitoring Station" fullBleed={true}>
@@ -153,6 +161,7 @@ export default function Patients() {
               const urgency = getUrgency(p);
               const isActive = selectedId === p.id;
               const dotColor = urgency === 'urgent' ? 'bg-danger' : urgency === 'monitoring' ? 'bg-warning' : 'bg-safe';
+              const source = getPatientDataSource(p.id);
 
               return (
                 <button
@@ -172,6 +181,12 @@ export default function Patients() {
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
                       {p.ward} • {p.bedId}
                     </p>
+                  </div>
+                  <div className={`shrink-0 inline-flex items-center gap-1 text-[9px] font-black uppercase ${
+                    source === 'live' ? 'text-emerald-600' : source === 'waiting' ? 'text-amber-600' : 'text-slate-400'
+                  }`}>
+                    <Radio className="w-2.5 h-2.5" />
+                    {source === 'live' ? 'Live' : source === 'waiting' ? 'Wait' : 'Sim'}
                   </div>
                   {isActive && <ChevronRight className="w-4 h-4 text-primary" />}
                 </button>
@@ -198,6 +213,16 @@ export default function Patients() {
                     <span className="bg-slate-100 px-2 py-1 rounded text-[10px] uppercase tracking-widest">{selectedPatient.gender} • {selectedPatient.age} YRS</span>
                     <span className="w-1 h-1 rounded-full bg-slate-300" />
                     <span>Admitted: {selectedPatient.admitted}</span>
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] uppercase tracking-widest ${
+                      selectedDataSource === 'live'
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                        : selectedDataSource === 'waiting'
+                          ? 'bg-amber-50 text-amber-600 border-amber-100'
+                          : 'bg-slate-50 text-slate-500 border-slate-200'
+                    }`}>
+                      <Radio className="w-3 h-3" />
+                      {selectedDataSource === 'live' ? 'Live Arduino Data' : selectedDataSource === 'waiting' ? 'Waiting for Arduino Data' : 'Synthetic Demo Data'}
+                    </span>
                   </div>
                 </div>
 

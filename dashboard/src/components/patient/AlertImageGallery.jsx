@@ -27,7 +27,11 @@ export default function AlertImageGallery({ patientId }) {
                   className="h-44 bg-slate-100 flex items-center justify-center cursor-pointer relative overflow-hidden"
                   onClick={() => setModalImage(alert)}
                 >
-                  <ImageIcon className="w-10 h-10 text-slate-300 group-hover:scale-110 transition-transform duration-500" />
+                  {alert.imageUrl ? (
+                    <img src={alert.imageUrl} alt="Incident evidence" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon className="w-10 h-10 text-slate-300 group-hover:scale-110 transition-transform duration-500" />
+                  )}
                   <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors flex items-center justify-center">
                     <span className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-white uppercase tracking-widest bg-primary/80 px-4 py-2 rounded-full backdrop-blur-md transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
                       Analyze Frame
@@ -71,7 +75,11 @@ export default function AlertImageGallery({ patientId }) {
               <X className="w-5 h-5" />
             </button>
             <div className="w-full aspect-video bg-slate-200 flex items-center justify-center">
-              <ImageIcon className="w-16 h-16 text-slate-400" />
+              {modalImage.imageUrl ? (
+                <img src={modalImage.imageUrl} alt="Incident evidence" className="w-full h-full object-contain bg-black" />
+              ) : (
+                <ImageIcon className="w-16 h-16 text-slate-400" />
+              )}
             </div>
             <div className="p-4 bg-surface border-t border-border flex justify-between items-center">
               <div>

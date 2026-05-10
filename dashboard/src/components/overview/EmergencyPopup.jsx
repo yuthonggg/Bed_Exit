@@ -37,6 +37,11 @@ export default function EmergencyPopup() {
               </div>
 
               <div className="bg-slate-50 rounded-2xl p-4 mb-4 border border-slate-100">
+                {activeAlert.imageUrl && (
+                  <div className="h-32 rounded-xl overflow-hidden border border-slate-200 mb-3 bg-slate-200">
+                    <img src={activeAlert.imageUrl} alt="Incident evidence" className="w-full h-full object-cover" />
+                  </div>
+                )}
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
                     <User className="w-5 h-5 text-slate-400" />
